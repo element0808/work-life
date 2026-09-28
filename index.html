@@ -99,7 +99,7 @@ function fail(t){busy=false;v='';paint();msg(t,true);dots.classList.remove('shak
 function tryOpen(code){
   busy=true;sub.className='g-busy';sub.textContent='Открываю…';
   post({action:'login',code}).then(r=>{
-    if(r&&r.token){TOKEN=r.token;welcome(r.html);return}
+    if(r&&r.token){TOKEN=r.token;window.WLB_BOOT=r.data||null;welcome(r.html);return}
     if(r&&r.error==='locked')fail('Слишком много попыток. Подождите '+r.minutes+' минут.');
     else if(r&&r.error==='wrong')fail(r.left>0?'Неверный код. Осталось попыток: '+r.left:'Неверный код');
     else fail('Сервер ответил ошибкой. Проверьте, что в Google развёрнута новая версия.');
@@ -120,9 +120,9 @@ function welcome(html){
   let ready=false,min=false,gone=false;
   const done=()=>{if(gone||!ready||!min)return;gone=true;w.classList.add('out');setTimeout(()=>{w.remove();const st=document.getElementById('wl-style');if(st)st.remove()},550)};
   document.addEventListener('wlb:ready',()=>{ready=true;done()},{once:true});
-  setTimeout(()=>{min=true;done()},1900);
+  setTimeout(()=>{min=true;done()},700);
   setTimeout(()=>{ready=true;done()},12000);
-  setTimeout(()=>mount(html,w),450);
+  setTimeout(()=>mount(html,w),120);
 }
 function mount(html,keep){
   document.documentElement.lang='ru';
