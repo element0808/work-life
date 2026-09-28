@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Work-life">
+<meta name="theme-color" content="#FBF6F7">
+<title>Work-life balance</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@300;500&display=swap">
+<style id="gate-style">
+:root{--g-bg:#FBF6F7;--g-card:#FFFFFF;--g-ink:#2A2226;--g-muted:#9C8F95;--g-line:#EDE2E6;--g-pink:#E2749A;--g-pink-soft:#FCE4EC;--g-green:#86C166;--g-green-soft:#E8F5DE;--g-red:#E5484D}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--g-bg:#161214;--g-card:#1F1A1C;--g-ink:#F5EDF0;--g-muted:#8E8187;--g-line:#342A2E;--g-pink:#F294B4;--g-pink-soft:#3D2330;--g-green:#94CD74;--g-green-soft:#223420;--g-red:#FF6B6F}}
+html,body{height:100%;margin:0}
+body{background:var(--g-bg);color:var(--g-ink);font-family:"Onest",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#gate{min-height:100%;display:grid;place-items:center;padding:24px 16px;box-sizing:border-box;
+  background:radial-gradient(60% 50% at 20% 10%,var(--g-pink-soft),transparent 70%),radial-gradient(50% 45% at 85% 90%,var(--g-green-soft),transparent 70%),var(--g-bg)}
+.g-card{width:min(340px,100%);display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}
+.g-brand{font-family:"Unbounded","Onest",sans-serif;font-weight:300;font-size:24px;letter-spacing:-.01em}
+.g-brand b{font-weight:500;color:var(--g-pink)}
+.g-sub{font-size:14px;color:var(--g-muted);margin-top:-8px;min-height:1.3em}
+.g-sub.err{color:var(--g-red);font-weight:500}
+.g-dots{display:flex;gap:18px;margin:6px 0 4px}
+.g-dots i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--g-ink);opacity:.55;transition:background .12s}
+.g-dots i.on{background:var(--g-ink);opacity:1}
+.g-dots.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.g-pad{display:grid;grid-template-columns:repeat(3,76px);gap:14px 22px}
+.g-pad button{width:76px;height:76px;border-radius:50%;border:0;background:var(--g-card);color:var(--g-ink);font:500 28px "Onest",sans-serif;cursor:pointer;box-shadow:0 1px 2px rgba(80,30,50,.06),0 6px 16px rgba(80,30,50,.06);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.g-pad button small{font-size:9px;letter-spacing:.18em;color:var(--g-muted);margin-top:3px;font-weight:600}
+.g-pad button:active{background:var(--g-pink-soft)}
+.g-pad button:focus-visible{outline:2px solid var(--g-pink);outline-offset:3px}
+.g-pad .ghost{background:transparent;box-shadow:none;font-size:14px;color:var(--g-muted)}
+.g-pad .ghost:active{background:transparent;color:var(--g-ink)}
+#gate:focus{outline:none}
+.g-kb{font-size:12px;color:var(--g-muted);margin-top:4px;min-height:1.2em}
+.g-kb.need{color:var(--g-pink);font-weight:600}
+.g-busy{font-size:13px;color:var(--g-muted);display:flex;align-items:center;gap:8px}
+.g-busy::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--g-line);border-top-color:var(--g-pink);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.g-dots.shake,.g-busy::before{animation:none}}
+@media (max-width:360px){.g-pad{grid-template-columns:repeat(3,66px);gap:12px 18px}.g-pad button{width:66px;height:66px}}
+</style>
+<style id="wl-style">
+.wl{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px 16px;font-family:"Onest",-apple-system,"Segoe UI",Roboto,sans-serif;color:#2A2226;
+  background:radial-gradient(60% 50% at 20% 10%,#FCE4EC,transparent 70%),radial-gradient(55% 50% at 85% 90%,#E8F5DE,transparent 70%),#FBF6F7;animation:wlIn .35s ease both;transition:opacity .5s ease}
+.wl.out{opacity:0}
+.wl-card{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:340px}
+.wl-check svg{width:76px;height:76px;display:block}
+.wl-check circle{fill:#E8F5DE;stroke:#86C166;stroke-width:2.5;stroke-dasharray:151;stroke-dashoffset:151;animation:wlDraw .6s .05s ease forwards}
+.wl-check path{fill:none;stroke:#46742C;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:36;stroke-dashoffset:36;animation:wlDraw .4s .5s ease forwards}
+.wl-t{font-size:14px;color:#46742C;font-weight:600;margin-top:8px}
+.wl-h{font-family:"Unbounded","Onest",sans-serif;font-weight:300;font-size:26px;letter-spacing:-.01em}
+.wl-h b{font-weight:500;color:#E2749A}
+.wl-d{font-size:14px;color:#9C8F95}
+.wl-bar{width:180px;height:4px;border-radius:4px;background:#F3E6EA;overflow:hidden;margin-top:14px}
+.wl-bar i{display:block;height:100%;width:40%;border-radius:4px;background:linear-gradient(90deg,#EC98B2,#97CE74);animation:wlBar 1.1s ease-in-out infinite}
+.wl-s{font-size:12px;color:#9C8F95}
+@keyframes wlIn{from{opacity:0;transform:scale(1.02)}}
+@keyframes wlDraw{to{stroke-dashoffset:0}}
+@keyframes wlBar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+@media (prefers-color-scheme:dark){
+  .wl{color:#F5EDF0;background:radial-gradient(60% 50% at 20% 10%,#3D2330,transparent 70%),radial-gradient(55% 50% at 85% 90%,#223420,transparent 70%),#161214}
+  .wl-check circle{fill:#223420;stroke:#94CD74}.wl-check path{stroke:#B7E39C}.wl-t{color:#B7E39C}.wl-bar{background:#2B2326}.wl-h b{color:#F294B4}
+}
+@media (prefers-reduced-motion:reduce){.wl,.wl-check circle,.wl-check path,.wl-bar i{animation:none;stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<div id="gate" tabindex="-1">
+  <div class="g-card">
+    <div class="g-brand">Work-life <b>balance</b></div>
+    <div class="g-sub" id="g-sub">Введите код доступа</div>
+    <div class="g-dots" id="g-dots" aria-live="polite"><i></i><i></i><i></i><i></i></div>
+    <div class="g-pad" id="g-pad">
+      <button data-k="1">1<small>&nbsp;</small></button><button data-k="2">2<small>ABC</small></button><button data-k="3">3<small>DEF</small></button>
+      <button data-k="4">4<small>GHI</small></button><button data-k="5">5<small>JKL</small></button><button data-k="6">6<small>MNO</small></button>
+      <button data-k="7">7<small>PQRS</small></button><button data-k="8">8<small>TUV</small></button><button data-k="9">9<small>WXYZ</small></button>
+      <span></span><button data-k="0">0</button><button class="ghost" data-k="del" aria-label="Стереть">Стереть</button>
+    </div>
+    <div class="g-kb" id="g-kb"></div>
+  </div>
+</div>
+<script>
+(()=>{
+const API_URL='https://script.google.com/macros/s/AKfycby0hgKXQjRrgQ2QDkHjvoRzdrJOkZBtiZEa61c7bqhwd7kBoFhKlVG2OQdivYhBJHoEqg/exec';
+const sub=document.getElementById('g-sub'),dots=document.getElementById('g-dots'),pad=document.getElementById('g-pad');
+let v='',busy=false,TOKEN=null;
+function paint(){[...dots.children].forEach((d,i)=>d.classList.toggle('on',i<v.length))}
+function msg(t,err){sub.textContent=t;sub.className='g-sub'+(err?' err':'')}
+function fail(t){busy=false;v='';paint();msg(t,true);dots.classList.remove('shake');void dots.offsetWidth;dots.classList.add('shake')}
+function tryOpen(code){
+  busy=true;sub.className='g-busy';sub.textContent='Открываю…';
+  post({action:'login',code}).then(r=>{
+    if(r&&r.token){TOKEN=r.token;welcome(r.html);return}
+    if(r&&r.error==='locked')fail('Слишком много попыток. Подождите '+r.minutes+' минут.');
+    else if(r&&r.error==='wrong')fail(r.left>0?'Неверный код. Осталось попыток: '+r.left:'Неверный код');
+    else fail('Сервер ответил ошибкой. Проверьте, что в Google развёрнута новая версия.');
+  }).catch(()=>fail('Нет связи с сервером. Проверьте интернет и попробуйте снова.'));
+}
+async function post(body){const res=await fetch(API_URL,{method:'POST',body:JSON.stringify(body),redirect:'follow'});return res.json()}
+window.WLB_API={async call(fn,...args){let r;try{r=await post({token:TOKEN,fn,args})}catch(e){throw{error:'net'}}if(r&&r.ok)return r.data;throw r||{error:'bad'}}};
+function welcome(html){
+  [...dots.children].forEach(d=>{d.style.background='#86C166';d.style.borderColor='#86C166';d.style.opacity=1});
+  const DF=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],MG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const n=new Date();
+  const w=document.createElement('div');w.className='wl';w.setAttribute('role','status');
+  w.innerHTML='<div class="wl-card"><div class="wl-check" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-16"/></svg></div>'+
+    '<div class="wl-t">Код доступа прошёл верификацию</div><div class="wl-h">Добро <b>пожаловать</b></div>'+
+    '<div class="wl-d">Сегодня '+DF[n.getDay()]+', '+n.getDate()+' '+MG[n.getMonth()]+'</div>'+
+    '<div class="wl-bar"><i></i></div><div class="wl-s">Загружаю ваше расписание…</div></div>';
+  document.body.appendChild(w);
+  let ready=false,min=false,gone=false;
+  const done=()=>{if(gone||!ready||!min)return;gone=true;w.classList.add('out');setTimeout(()=>{w.remove();const st=document.getElementById('wl-style');if(st)st.remove()},550)};
+  document.addEventListener('wlb:ready',()=>{ready=true;done()},{once:true});
+  setTimeout(()=>{min=true;done()},1900);
+  setTimeout(()=>{ready=true;done()},12000);
+  setTimeout(()=>mount(html,w),450);
+}
+function mount(html,keep){
+  document.documentElement.lang='ru';
+  const doc=new DOMParser().parseFromString('<!doctype html><html lang="ru"><head></head><body>'+html+'</body></html>','text/html');
+  const scripts=[...doc.body.querySelectorAll('script')];scripts.forEach(s=>s.remove());
+  doc.body.querySelectorAll('title').forEach(t=>t.remove());
+  doc.body.querySelectorAll('style,link').forEach(n=>document.head.appendChild(document.importNode(n,true)));
+  document.getElementById('gate-style').remove();
+  document.body.innerHTML='';
+  [...doc.body.childNodes].forEach(n=>document.body.appendChild(document.importNode(n,true)));
+  scripts.forEach(s=>{const x=document.createElement('script');x.textContent=s.textContent;document.body.appendChild(x)});
+  if(keep)document.body.appendChild(keep);
+  removeEventListener('keydown',onKey);
+}
+function press(k){
+  if(busy)return;
+  if(k==='del'){v=v.slice(0,-1);paint();return}
+  if(v.length>=4)return;
+  v+=k;paint();if(sub.classList.contains('err'))msg('Введите код доступа');
+  if(v.length===4)setTimeout(()=>tryOpen(v),120);
+}
+pad.addEventListener('click',e=>{const b=e.target.closest('button');if(b)press(b.dataset.k)});
+function onKey(e){if(/^[0-9]$/.test(e.key))press(e.key);else if(e.key==='Backspace')press('del')}
+addEventListener('keydown',onKey);
+const gate=document.getElementById('gate'),kb=document.getElementById('g-kb');
+function kbHint(){if(!kb.isConnected)return;const f=document.hasFocus();kb.textContent=f?'Можно вводить цифры с клавиатуры':'Нажмите в любом месте страницы, чтобы вводить код с клавиатуры';kb.className='g-kb'+(f?'':' need')}
+gate.addEventListener('pointerdown',e=>{if(!e.target.closest('button'))gate.focus()});
+addEventListener('focus',kbHint);addEventListener('blur',kbHint);
+try{window.focus();gate.focus({preventScroll:true})}catch(e){}
+kbHint();setTimeout(kbHint,300);
+})();
+</script>
+</body>
+</html>
