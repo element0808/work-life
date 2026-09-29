@@ -50,7 +50,7 @@ body{background:var(--g-bg);color:var(--g-ink);font-family:"Onest",-apple-system
 </style>
 <style id="wl-style">
 .wl{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px 16px;font-family:"Onest",-apple-system,"Segoe UI",Roboto,sans-serif;color:#2A2226;
-  background:radial-gradient(60% 50% at 20% 10%,#FCE4EC,transparent 70%),radial-gradient(55% 50% at 85% 90%,#E8F5DE,transparent 70%),#FBF6F7;animation:wlIn .35s ease both;transition:opacity .5s ease}
+  background:radial-gradient(60% 50% at 20% 10%,#FCE4EC,transparent 70%),radial-gradient(55% 50% at 85% 90%,#E8F5DE,transparent 70%),#FBF6F7;animation:wlIn .35s ease both;transition:opacity .3s ease}
 .wl.out{opacity:0}
 .wl-card{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:340px}
 .wl-check svg{width:76px;height:76px;display:block}
@@ -86,51 +86,115 @@ body{background:var(--g-bg);color:var(--g-ink);font-family:"Onest",-apple-system
       <span></span><button data-k="0">0</button><button class="ghost" data-k="del" aria-label="Стереть">Стереть</button>
     </div>
     <div class="g-kb" id="g-kb"></div>
+    <div class="g-ver" style="font-size:11px;color:var(--g-muted);opacity:.7;margin-top:6px">версия 11 · 29.09</div>
   </div>
 </div>
 <script>
 (()=>{
 const API_URL='https://script.google.com/macros/s/AKfycby0hgKXQjRrgQ2QDkHjvoRzdrJOkZBtiZEa61c7bqhwd7kBoFhKlVG2OQdivYhBJHoEqg/exec';
+async function post(body){const res=await fetch(API_URL,{method:'POST',body:JSON.stringify(body),redirect:'follow'});return res.json()}
+const serverLogin=code=>post({action:'login',code});
+const apiCall=(t,fn,args)=>post({token:t,fn,args}).catch(()=>({error:'net'}));
 const sub=document.getElementById('g-sub'),dots=document.getElementById('g-dots'),pad=document.getElementById('g-pad');
-let v='',busy=false,TOKEN=null;
+let v='',busy=false,TOKEN=null,KEY=null,SALT=null,mounted=false,cachedHtml=null;
+let tokenWait=[];
 function paint(){[...dots.children].forEach((d,i)=>d.classList.toggle('on',i<v.length))}
 function msg(t,err){sub.textContent=t;sub.className='g-sub'+(err?' err':'')}
 function fail(t){busy=false;v='';paint();msg(t,true);dots.classList.remove('shake');void dots.offsetWidth;dots.classList.add('shake')}
-function tryOpen(code){
-  busy=true;sub.className='g-busy';sub.textContent='Открываю…';
-  post({action:'login',code}).then(r=>{
-    if(r&&r.token){TOKEN=r.token;window.WLB_BOOT=r.data||null;welcome(r.html);return}
-    if(r&&r.error==='locked')fail('Слишком много попыток. Подождите '+r.minutes+' минут.');
-    else if(r&&r.error==='wrong')fail(r.left>0?'Неверный код. Осталось попыток: '+r.left:'Неверный код');
-    else fail('Сервер ответил ошибкой. Проверьте, что в Google развёрнута новая версия.');
-  }).catch(()=>fail('Нет связи с сервером. Проверьте интернет и попробуйте снова.'));
+
+/* ---------- зашифрованная копия на этом устройстве: открывает планер мгновенно ---------- */
+const CK='wlb.cache.v1';
+const enc=new TextEncoder(),dec=new TextDecoder();
+const b64=u=>btoa(String.fromCharCode(...u)),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+function readCache(){try{return JSON.parse(localStorage.getItem(CK)||'null')}catch(e){return null}}
+function dropCache(){try{localStorage.removeItem(CK)}catch(e){}}
+async function deriveKey(code,salt){
+  const base=await crypto.subtle.importKey('raw',enc.encode(code),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:120000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 }
-async function post(body){const res=await fetch(API_URL,{method:'POST',body:JSON.stringify(body),redirect:'follow'});return res.json()}
-window.WLB_API={async call(fn,...args){let r;try{r=await post({token:TOKEN,fn,args})}catch(e){throw{error:'net'}}if(r&&r.ok)return r.data;throw r||{error:'bad'}}};
-function welcome(html){
+async function openCache(code){
+  const c=readCache();if(!c||!window.crypto||!crypto.subtle)return null;
+  try{
+    SALT=ub(c.s);KEY=await deriveKey(code,SALT);
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(c.i)},KEY,ub(c.c));
+    return JSON.parse(dec.decode(pt));
+  }catch(e){KEY=null;return null}
+}
+async function writeCache(obj){
+  try{
+    if(!KEY)return;
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},KEY,enc.encode(JSON.stringify(obj))));
+    localStorage.setItem(CK,JSON.stringify({s:b64(SALT),i:b64(iv),c:b64(ct)}));
+  }catch(e){}
+}
+async function prepareKey(code){if(KEY||!window.crypto||!crypto.subtle)return;SALT=crypto.getRandomValues(new Uint8Array(16));KEY=await deriveKey(code,SALT)}
+let lastHtml=null;
+window.WLB_SAVECACHE=d=>{if(lastHtml&&d)writeCache({html:lastHtml,data:d})};
+
+/* ---------- API ---------- */
+function gotToken(t){TOKEN=t;tokenWait.forEach(f=>f());tokenWait=[]}
+function waitToken(){return TOKEN?Promise.resolve():new Promise(r=>tokenWait.push(r))}
+window.WLB_API={async call(fn,...args){await waitToken();const r=await apiCall(TOKEN,fn,args);if(r&&r.ok)return r.data;throw r||{error:'bad'}}};
+
+async function tryOpen(code){
+  busy=true;sub.className='g-busy';sub.textContent='Открываю…';
+  const cached=await openCache(code);
+  if(cached&&cached.html){
+    // верный код: открываем сразу из копии, а свежие данные подтягиваем с сервера в фоне
+    lastHtml=cachedHtml=cached.html;window.WLB_BOOT=cached.data||null;welcome(cached.html,true);
+    serverLogin(code).then(r=>{
+      if(r&&r.token){
+        gotToken(r.token);lastHtml=r.html;writeCache({html:r.html,data:r.data});
+        if(r.html!==cachedHtml)showUpdate();
+        else if(r.data&&window.WLB_APPLY)window.WLB_APPLY(r.data);
+      }else if(r&&r.error==='wrong'){dropCache();location.reload()}
+    }).catch(()=>{});
+    return;
+  }
+  let r;
+  try{r=await serverLogin(code)}catch(e){fail('Нет связи с сервером. Проверьте интернет и попробуйте снова.');return}
+  if(r&&r.token){
+    gotToken(r.token);window.WLB_BOOT=r.data||null;lastHtml=r.html;welcome(r.html,false);
+    prepareKey(code).then(()=>writeCache({html:r.html,data:r.data}));
+    return;
+  }
+  if(r&&r.error==='locked')fail('Слишком много попыток. Подождите '+r.minutes+' минут.');
+  else if(r&&r.error==='wrong')fail(r.left>0?'Неверный код. Осталось попыток: '+r.left:'Неверный код');
+  else fail('Сервер ответил ошибкой. Проверьте, что в Google развёрнута новая версия.');
+}
+function showUpdate(){
+  const b=document.createElement('div');
+  b.setAttribute('role','status');
+  b.style.cssText='position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:900;background:#2A2226;color:#fff;border-radius:14px;padding:10px 12px 10px 16px;display:flex;gap:12px;align-items:center;font:500 13px Onest,-apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px)';
+  b.innerHTML='<span>Вышла новая версия планера</span><button type="button" style="border:0;border-radius:10px;background:#F8D3DE;color:#7A2E4B;font:600 13px Onest,sans-serif;padding:7px 12px;cursor:pointer">Обновить</button>';
+  b.querySelector('button').onclick=()=>location.reload();
+  document.body.appendChild(b);
+}
+function welcome(html,fast){
   [...dots.children].forEach(d=>{d.style.background='#86C166';d.style.borderColor='#86C166';d.style.opacity=1});
   const DF=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],MG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   const n=new Date();
   const w=document.createElement('div');w.className='wl';w.setAttribute('role','status');
   w.innerHTML='<div class="wl-card"><div class="wl-check" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-16"/></svg></div>'+
     '<div class="wl-t">Код доступа прошёл верификацию</div><div class="wl-h">Добро <b>пожаловать</b></div>'+
-    '<div class="wl-d">Сегодня '+DF[n.getDay()]+', '+n.getDate()+' '+MG[n.getMonth()]+'</div>'+
-    '<div class="wl-bar"><i></i></div><div class="wl-s">Загружаю ваше расписание…</div></div>';
+    '<div class="wl-d">Сегодня '+DF[n.getDay()]+', '+n.getDate()+' '+MG[n.getMonth()]+'</div></div>';
   document.body.appendChild(w);
   let ready=false,min=false,gone=false;
-  const done=()=>{if(gone||!ready||!min)return;gone=true;w.classList.add('out');setTimeout(()=>{w.remove();const st=document.getElementById('wl-style');if(st)st.remove()},550)};
+  const done=()=>{if(gone||!ready||!min)return;gone=true;w.classList.add('out');setTimeout(()=>{w.remove();const st=document.getElementById('wl-style');if(st)st.remove()},300)};
   document.addEventListener('wlb:ready',()=>{ready=true;done()},{once:true});
-  setTimeout(()=>{min=true;done()},700);
-  setTimeout(()=>{ready=true;done()},12000);
-  setTimeout(()=>mount(html,w),120);
+  setTimeout(()=>{min=true;done()},fast?200:450);
+  setTimeout(()=>{ready=true;done()},8000);
+  setTimeout(()=>mount(html,w),40);
 }
 function mount(html,keep){
+  if(mounted)return;mounted=true;
   document.documentElement.lang='ru';
   const doc=new DOMParser().parseFromString('<!doctype html><html lang="ru"><head></head><body>'+html+'</body></html>','text/html');
   const scripts=[...doc.body.querySelectorAll('script')];scripts.forEach(s=>s.remove());
   doc.body.querySelectorAll('title').forEach(t=>t.remove());
   doc.body.querySelectorAll('style,link').forEach(n=>document.head.appendChild(document.importNode(n,true)));
-  document.getElementById('gate-style').remove();
+  const gs=document.getElementById('gate-style');if(gs)gs.remove();
   document.body.innerHTML='';
   [...doc.body.childNodes].forEach(n=>document.body.appendChild(document.importNode(n,true)));
   scripts.forEach(s=>{const x=document.createElement('script');x.textContent=s.textContent;document.body.appendChild(x)});
@@ -142,13 +206,13 @@ function press(k){
   if(k==='del'){v=v.slice(0,-1);paint();return}
   if(v.length>=4)return;
   v+=k;paint();if(sub.classList.contains('err'))msg('Введите код доступа');
-  if(v.length===4)setTimeout(()=>tryOpen(v),120);
+  if(v.length===4)setTimeout(()=>tryOpen(v),60);
 }
 pad.addEventListener('click',e=>{const b=e.target.closest('button');if(b)press(b.dataset.k)});
 function onKey(e){if(/^[0-9]$/.test(e.key))press(e.key);else if(e.key==='Backspace')press('del')}
 addEventListener('keydown',onKey);
 const gate=document.getElementById('gate'),kb=document.getElementById('g-kb');
-function kbHint(){if(!kb.isConnected)return;const f=document.hasFocus();kb.textContent=f?'Можно вводить цифры с клавиатуры':'Нажмите в любом месте страницы, чтобы вводить код с клавиатуры';kb.className='g-kb'+(f?'':' need')}
+function kbHint(){if(!kb||!kb.isConnected)return;const f=document.hasFocus();kb.textContent=f?'Можно вводить цифры с клавиатуры':'Нажмите в любом месте страницы, чтобы вводить код с клавиатуры';kb.className='g-kb'+(f?'':' need')}
 gate.addEventListener('pointerdown',e=>{if(!e.target.closest('button'))gate.focus()});
 addEventListener('focus',kbHint);addEventListener('blur',kbHint);
 try{window.focus();gate.focus({preventScroll:true})}catch(e){}
