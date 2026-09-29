@@ -86,7 +86,7 @@ body{background:var(--g-bg);color:var(--g-ink);font-family:"Onest",-apple-system
       <span></span><button data-k="0">0</button><button class="ghost" data-k="del" aria-label="Стереть">Стереть</button>
     </div>
     <div class="g-kb" id="g-kb"></div>
-    <div class="g-ver" style="font-size:11px;color:var(--g-muted);opacity:.7;margin-top:6px">версия 11 · 29.09</div>
+    <div class="g-ver" style="font-size:11px;color:var(--g-muted);opacity:.7;margin-top:6px">версия 15 · 29.09</div>
   </div>
 </div>
 <script>
@@ -105,7 +105,8 @@ function fail(t){busy=false;v='';paint();msg(t,true);dots.classList.remove('shak
 /* ---------- зашифрованная копия на этом устройстве: открывает планер мгновенно ---------- */
 const CK='wlb.cache.v1';
 const enc=new TextEncoder(),dec=new TextDecoder();
-const b64=u=>btoa(String.fromCharCode(...u)),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+// кусками: большой массив через ...spread ломается (Maximum call stack), и копия молча не сохранялась
+const b64=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)},ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 function readCache(){try{return JSON.parse(localStorage.getItem(CK)||'null')}catch(e){return null}}
 function dropCache(){try{localStorage.removeItem(CK)}catch(e){}}
 async function deriveKey(code,salt){
@@ -145,9 +146,9 @@ async function tryOpen(code){
     lastHtml=cachedHtml=cached.html;window.WLB_BOOT=cached.data||null;welcome(cached.html,true);
     serverLogin(code).then(r=>{
       if(r&&r.token){
-        gotToken(r.token);lastHtml=r.html;writeCache({html:r.html,data:r.data});
-        if(r.html!==cachedHtml)showUpdate();
-        else if(r.data&&window.WLB_APPLY)window.WLB_APPLY(r.data);
+        gotToken(r.token);lastHtml=r.html;
+        writeCache({html:r.html,data:r.data}).then(()=>{if(r.html!==cachedHtml)showUpdate(r.url)});
+        if(r.html===cachedHtml&&r.data&&window.WLB_APPLY)window.WLB_APPLY(r.data);
       }else if(r&&r.error==='wrong'){dropCache();location.reload()}
     }).catch(()=>{});
     return;
@@ -163,12 +164,17 @@ async function tryOpen(code){
   else if(r&&r.error==='wrong')fail(r.left>0?'Неверный код. Осталось попыток: '+r.left:'Неверный код');
   else fail('Сервер ответил ошибкой. Проверьте, что в Google развёрнута новая версия.');
 }
-function showUpdate(){
+function showUpdate(url){
   const b=document.createElement('div');
   b.setAttribute('role','status');
   b.style.cssText='position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:900;background:#2A2226;color:#fff;border-radius:14px;padding:10px 12px 10px 16px;display:flex;gap:12px;align-items:center;font:500 13px Onest,-apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px)';
-  b.innerHTML='<span>Вышла новая версия планера</span><button type="button" style="border:0;border-radius:10px;background:#F8D3DE;color:#7A2E4B;font:600 13px Onest,sans-serif;padding:7px 12px;cursor:pointer">Обновить</button>';
-  b.querySelector('button').onclick=()=>location.reload();
+  const st='border:0;border-radius:10px;background:#F8D3DE;color:#7A2E4B;font:600 13px Onest,sans-serif;padding:7px 12px;cursor:pointer;text-decoration:none;white-space:nowrap';
+  const inFrame=(()=>{try{return window.top!==window}catch(e){return true}})();
+  // внутри страницы Google перезагрузка iframe даёт белый экран, поэтому открываем адрес сайта целиком
+  b.innerHTML='<span>Новая версия уже сохранена и откроется при следующем входе</span>'+(inFrame&&url?'<a target="_top" style="'+st+'">Открыть сейчас</a>':'<button type="button" style="'+st+'">Открыть сейчас</button>');
+  const act=b.querySelector('a,button');
+  if(act.tagName==='A')act.href=url;else act.onclick=()=>location.reload();
+  const x=document.createElement('button');x.type='button';x.setAttribute('aria-label','Закрыть');x.textContent='×';x.style.cssText='border:0;background:transparent;color:#fff;font-size:18px;cursor:pointer;padding:0 4px';x.onclick=()=>b.remove();b.appendChild(x);
   document.body.appendChild(b);
 }
 function welcome(html,fast){
